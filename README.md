@@ -1,6 +1,6 @@
 # :memo: Sudoku
 
-A sudoku solver.
+A sudoku generator and solver
 
 ## :tada: Examples
 
@@ -15,8 +15,8 @@ Project pitched and started the _7th november 2020_
 First expected release the friday **9th november 2020** 
 
 
-## dependencies
-1. Set your Virtual Environment :
+## Dependencies
+1. Set your Virtual Environment:
 
 	``` bash
 	# Download venv librairy
@@ -28,6 +28,13 @@ First expected release the friday **9th november 2020**
 	```
 	
 	_For more information, go to [Python Virtual Environment Official Documentation](https://docs.python.org/3/library/venv.html)._
+
+1. Install the project dependencies:
+
+	``` bash
+	apt install python3-pip
+	pip install numpy
+	```
 
 
 ## :clipboard: Tasks
