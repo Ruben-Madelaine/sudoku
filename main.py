@@ -12,9 +12,10 @@ class Sudoku:
         txt = board_to_text(self, self.grid, self.cell_to_text)
         return "The great Sudoku !" + txt
 
-    def cell_to_text(self, r):
-        h = "*" if r in self.hilighted_values else " "
-        c = f" {r}{h}"
+    def cell_to_text(self, i, j):
+        val = self.grid[i][j]
+        h = "*" if val in self.hilighted_values else " "
+        c = f" {val}{h}"
         return c
 
     def set_grid(self, grid):
@@ -26,21 +27,46 @@ class Sudoku:
     def hilight(self, number):
         self.hilighted_values += [number]
 
-    def play(self, i, j, val):
+    def play(self, val, i, j):
         # verify action
         self.grid[i][j] = val
 
 
+
+class Cell:
+    options = []
+    value = 0
+
+    def __init__(self, i, j):
+        self.pos = (i, j)
+
+    def __str__(self):
+        return f"{self.pos}: {self.value if self.value else ','.join(self.options)}"
+
+    def is_empty(self):
+        return self.value == 0
+
+    def remove(self, value):
+        self.options.remove(value)
+
+    def one_option_left(self):
+        return len(self.options) == 1
+
+    def set_value(self, value):
+        self.value = value
+        self.options = []
+
+
 class Solver:
-    all_possibilities = []
+    all_options = {}
     count = 0
 
     def __str__(self):
-        txt = board_to_text(self, self.all_possibilities, self.cell_to_text)
+        txt = board_to_text(self, self.all_options, self.cell_to_text)
         return "The great Solver !" + txt
 
-    def cell_to_text(self, r):
-        val = ','.join([str(v) for v in r])
+    def cell_to_text(self, i, j):
+        val = ','.join([str(v) for v in self.all_options[(i,j)].options])
         c = f" {val:^7.7} "
         return c
 
@@ -53,9 +79,9 @@ class Solver:
         # use cell restriction
         while "solving sudoku":
             self.count += 1
-            found_h = self.reduce_possibilities_horizontally()
-            found_v = self.reduce_possibilities_vertically()
-            found_s = self.reduce_possibilities_in_square()
+            found_h = self.reduce_options_horizontally()
+            found_v = self.reduce_options_vertically()
+            found_s = self.reduce_options_in_square()
             if not (found_h or found_v or found_s):
                 break
 
@@ -67,31 +93,36 @@ class Solver:
         # use zone restriction  
 
     def retreive_all_possibilities(self):
-        for row in self.sudoku.grid:
-            l = []
-            for c in row:
-                l.append([c] if c != 0 else [i for i in range(1, self.sudoku.size+1)])
-            self.all_possibilities += [l]
+        for i in range(self.sudoku.size):
+            for j in range(self.sudoku.size):
+                c = Cell(i, j)
+                if self.sudoku.grid[i][j]:
+                    c.value = self.sudoku.grid[i][j]
+                else:
+                    c.options = [i for i in range(1, self.sudoku.size+1)]
+                self.all_options[(i,j)] = c
+
 
     # ------------------- GLOBAL REDUCERS ------------------
 
-    def reduce_possibilities_horizontally(self):
+    def reduce_options_horizontally(self):
         found_restrictions = False
         print(f"\n{self.count}-", inspect.currentframe().f_code.co_name.title(), ":")
-        for i, row in enumerate(self.all_possibilities):
-            restrictions = self.get_restrictions(row)
+        for i in range(self.size):
+            row = self.get_row(i)
+            restrictions = self.get_zone_restrictions(row)
 
             found = self.reduce_row(i, restrictions)
             if found:
                 found_restrictions = True
         return found_restrictions
 
-    def reduce_possibilities_vertically(self):
+    def reduce_options_vertically(self):
         found_restrictions = False
         print(f"\n{self.count}-", inspect.currentframe().f_code.co_name.title(), ":")
         for j in range(self.size):
             column = self.get_column(j)
-            restrictions = self.get_restrictions(column)
+            restrictions = self.get_zone_restrictions(column)
 
             found = self.reduce_col(j, restrictions)
             if found:
@@ -99,14 +130,14 @@ class Solver:
 
         return found_restrictions
 
-    def reduce_possibilities_in_square(self):
+    def reduce_options_in_square(self):
         found_restrictions = False
         print(f"\n{self.count}-", inspect.currentframe().f_code.co_name.title(), ":")
         square_size = 3
         for x in range(square_size):
             for y in range(square_size):
                 square = self.get_square(square_size*x, square_size*y, square_size)
-                restrictions = self.get_restrictions(square)
+                restrictions = self.get_zone_restrictions(square)
 
                 found = self.reduce_square(x, y, square_size, restrictions)
                 if found:
@@ -116,10 +147,18 @@ class Solver:
 
     # ------------------- GETTER ------------------
 
+    def get_row(self, i):
+        row = []
+        for j in range(self.size):
+            c = self.all_options[(i,j)]
+            row += [c]
+
+        return row
+
     def get_column(self, j):
         column = []
         for i in range(self.size):
-            c = self.all_possibilities[i][j]
+            c = self.all_options[(i,j)]
             column += [c]
 
         return column
@@ -128,29 +167,32 @@ class Solver:
         square = []
         for i in range(square_size):
             for j in range(square_size):
-                c = self.all_possibilities[square_x+i][square_y+j]
+                c = self.all_options[(square_x+i,square_y+j)]
                 square += [c]
 
         return square
 
-    def get_restrictions(self, zone):
-        return [c[0] for c in zone if len(c) == 1]
+    def get_zone_restrictions(self, zone):
+        return [cell.value for cell in zone if cell.value]
+
+    def get_zone_options(self, zone):
+        return [cell.options for cell in zone if not cell.value]
 
     # ------------------- REDUCERS ------------------
 
     def reduce_row(self, i, restrictions):
         found = False
         for j in range(self.size):
-            c = self.all_possibilities[i][j]
-            found = self.remove_possibilities(c, restrictions, i, j)
+            c = self.all_options[(i,j)]
+            found = self.remove_options(c, restrictions, i, j)
             
         return found
 
     def reduce_col(self, j, restrictions):
         found = False
         for i in range(self.size):
-            c = self.all_possibilities[i][j]
-            found = self.remove_possibilities(c, restrictions, i, j)
+            c = self.all_options[(i,j)]
+            found = self.remove_options(c, restrictions, i, j)
             
         return found
 
@@ -158,32 +200,39 @@ class Solver:
         found = False
         for k in range(self.size):
             i, j = size*x + k//size, size*y + k%size
-            c = self.all_possibilities[i][j]
-            found = self.remove_possibilities(c, restrictions, i, j)
+            c = self.all_options[(i,j)]
+            found = self.remove_options(c, restrictions, i, j)
         return found
 
-    def remove_possibilities(self, cell, restrictions, i, j):
-        intersection = set(cell) & set(restrictions)
+    def remove_options(self, cell, restrictions, i, j):
+        intersection = set(cell.options) & set(restrictions)
 
-        if len(cell) > 1 and len(intersection):
+        if cell.is_empty() and len(intersection):
             [cell.remove(v) for v in intersection]
-            if len(cell) == 1:
-                print(f"Found a value at ({i}, {j}) !", cell[0])
-                self.sudoku.play(i, j, cell[0])
+            if cell.one_option_left():
+                cell.set_value(cell.options[0])
+                self.sudoku.play(cell.value, *cell.pos)
+                print(f"Found a value at {cell} !")
+                
             return True
 
 
     # ------------------- SINGLE CHOICE REDUCER ------------------
 
     def single_choice_horizontally(self):
-        pass
-        
+        for i in range(self.size):
+            row = self.get_row(i)
+            # print("row", row)
+            options = self.get_zone_options(row)
+            print("options", options)
+
+
     def single_choice_vertically(self):
         pass
-        
+
     def single_choice_in_square(self):
         pass
-        
+
 
 def txt_to_list(txt):
     return txt.replace(" ", "").split("\n")[1:-1]
@@ -198,12 +247,12 @@ def board_to_text(object, grid, cell_to_text):
         "light": ["|", "-", " ", " "],
     }["light"]
 
-    for i, row in enumerate(grid):
+    for i in range(object.size):
         txt += "\n"
         line = ""
         sub_sep = ""
-        for j, r in enumerate(row):
-            c = object.cell_to_text(r)
+        for j in range(object.size):
+            c = object.cell_to_text(i, j)
 
             # Vertical separators
             use_main_sep_v = j > 0 and (j + 1) % main_sep == 0
