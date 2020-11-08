@@ -2,51 +2,51 @@ import numpy as np
 from random import shuffle
 
 
-MIX_LOOP = 4
-sub = 3
-size = sub**2
+def generate(sub_size):
+    size = sub_size ** 2
+    board = create_board(size, sub_size)
+    return axial_shuffle(board, sub_size)
 
 
-def generate_grid(sub, size):
+def create_board(size, sub_size):
     def add_offset(list, offset):
         s = len(list)
-        return list[s-offset:] + list[:s-offset]
+        return list[s - offset :] + list[: s - offset]
 
-    grid = []    
-    vals = list(range(1, size+1))
+    board = []
+    vals = list(range(1, size + 1))
 
     for i in range(size):
-        grid += [vals]
+        board += [vals]
 
-        vals = add_offset(vals, sub)
-        if i>0 and (i+1)%sub == 0:
+        vals = add_offset(vals, sub_size)
+        if i > 0 and (i + 1) % sub_size == 0:
             vals = add_offset(vals, 1)
 
-    return grid
+    return board
 
 
-def randomizer(grid):
-	for i in range(2):
-		random_grid = []
-		for i in range(0, len(grid), 3):
-			a = grid[i:i+3]
-			shuffle(a)
-			random_grid += a
-	return random_grid
+def axial_shuffle(board, sub_size):
+    for i in range(2):
+        board = randomize(board, sub_size)
+        board = np.transpose(board).tolist()
+    return board
 
 
-def mix_loop(grid,num):
-	for i in range(num):
-		grid = randomizer(grid)
-		grid = np.transpose(grid).tolist()
-
-	return grid
-
-def main(num):
-	filled_grid = generate_grid(sub, size)
-	random_grid = mix_loop(filled_grid,num)
-
-	print(*random_grid, sep = "\n")
+def randomize(board, sub_size):
+    random_board = []
+    for i in range(0, len(board), sub_size):
+        group_of_rows = board[i : i + sub_size]
+        shuffle(group_of_rows)
+        random_board += group_of_rows
+    return random_board
 
 
-main(MIX_LOOP)
+def main():
+    sub_size = 3
+    random_board = generate(sub_size)
+    print(*random_board, sep="\n")
+
+
+if __name__ == "__main__":
+    main()
