@@ -1,37 +1,6 @@
 
-
 import inspect
 import display
-
-
-class Sudoku:
-    grid = []
-    size = 0
-    hilighted_values = []
-
-    def __str__(self):
-        txt = display.board_to_text(self, self.grid, self.cell_to_text)
-        return "The great Sudoku !" + txt
-
-    def cell_to_text(self, i, j):
-        val = self.grid[i][j]
-        h = "*" if val in self.hilighted_values else " "
-        c = f" {val}{h}"
-        return c
-
-    def set_grid(self, grid):
-        if isinstance(grid, str):
-            grid = [[int(v) for v in k] for k in txt_to_list(grid)]
-        self.grid = grid
-        self.size = len(grid)
-
-    def hilight(self, number):
-        self.hilighted_values += [number]
-
-    def play(self, val, i, j):
-        # verify action
-        self.grid[i][j] = val
-
 
 
 class Cell:
@@ -71,14 +40,14 @@ class Solver:
         c = f" {val:^7.7} "
         return c
 
-    def solve(self, sudoku):
-        self.sudoku = sudoku
-        self.size = sudoku.size
+    def solve(self, puzzle):
+        self.puzzle = puzzle
+        self.size = puzzle.size
 
         self.retreive_all_possibilities()
 
         # use cell restriction
-        while "solving sudoku":
+        while "solving puzzle":
             self.count += 1
             found_h = self.reduce_options_horizontally()
             found_v = self.reduce_options_vertically()
@@ -94,13 +63,13 @@ class Solver:
         # use zone restriction  
 
     def retreive_all_possibilities(self):
-        for i in range(self.sudoku.size):
-            for j in range(self.sudoku.size):
+        for i in range(self.puzzle.size):
+            for j in range(self.puzzle.size):
                 c = Cell(i, j)
-                if self.sudoku.grid[i][j]:
-                    c.value = self.sudoku.grid[i][j]
+                if self.puzzle.grid[i][j]:
+                    c.value = self.puzzle.grid[i][j]
                 else:
-                    c.options = [i for i in range(1, self.sudoku.size+1)]
+                    c.options = [i for i in range(1, self.puzzle.size+1)]
                 self.all_options[(i,j)] = c
 
 
@@ -212,7 +181,7 @@ class Solver:
             [cell.remove(v) for v in intersection]
             if cell.one_option_left():
                 cell.set_value(cell.options[0])
-                self.sudoku.play(cell.value, *cell.pos)
+                self.puzzle.play(cell.value, *cell.pos)
                 print(f"Found a value at {cell} !")
                 
             return True
@@ -233,10 +202,6 @@ class Solver:
 
     def single_choice_in_square(self):
         pass
-
-
-def txt_to_list(txt):
-    return txt.replace(" ", "").split("\n")[1:-1]
 
 
 def main():
@@ -276,7 +241,9 @@ def main():
         090300004
     """
 
+    from sudoku import Sudoku
     sudoku = Sudoku()
+
     sudoku.set_grid(raw_sudoku)
     sudoku.hilight(1)
     sudoku.hilight(2)
