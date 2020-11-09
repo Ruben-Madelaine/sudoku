@@ -1,5 +1,4 @@
 
-import inspect
 import display
 
 
@@ -47,22 +46,9 @@ class Solver:
         self.size = puzzle.size
 
         self.retreive_all_possibilities()
-
-        # use cell restriction
-        while "solving puzzle":
-            self.count += 1
-            found_h = self.reduce_options_horizontally()
-            found_v = self.reduce_options_vertically()
-            found_s = self.reduce_options_in_square()
-            if not (found_h or found_v or found_s):
-                break
-
-        # look for single possible choice for zone
-        found_h = self.single_choice_horizontally()
-        found_v = self.single_choice_vertically()
-        found_s = self.single_choice_in_square()
-
-        # use zone restriction  
+        self.reduce_cells_options()
+        self.apply_single_choice_rule()
+        # self.use_zone_restrictions()  
 
     def retreive_all_possibilities(self):
         for i in range(self.puzzle.size):
@@ -74,42 +60,43 @@ class Solver:
                     c.options = [i for i in range(1, self.puzzle.size+1)]
                 self.all_options[(i,j)] = c
 
+    def reduce_cells_options(self):
+        while "solving puzzle":
+            self.count += 1
+            print(self.count)
+            found_h = self.reduce_options(self.get_row, self.reduce_row)
+            found_v = self.reduce_options(self.get_col, self.reduce_col)
+            found_s = self.reduce_options_in_square()
+            if not (found_h or found_v or found_s):
+                break
+
+    def apply_single_choice_rule(self):
+        # look for single possible choice for each zone
+        self.single_choice_horizontally()
+        self.single_choice_vertically()
+        self.single_choice_in_square()
+
 
     # ------------------- GLOBAL REDUCERS ------------------
 
-    def reduce_options_horizontally(self):
+    def reduce_options(self, get_zone, reduce_zone):
         found_restrictions = False
-        print(f"\n{self.count}-", inspect.currentframe().f_code.co_name.title(), ":")
         for i in range(self.size):
-            row = self.get_row(i)
-            restrictions = self.get_zone_restrictions(row)
+            zone = get_zone(i)
+            restrictions = self.get_restrictions(zone)
 
-            found = self.reduce_row(i, restrictions)
+            found = reduce_zone(i, restrictions)
             if found:
                 found_restrictions = True
-        return found_restrictions
-
-    def reduce_options_vertically(self):
-        found_restrictions = False
-        print(f"\n{self.count}-", inspect.currentframe().f_code.co_name.title(), ":")
-        for j in range(self.size):
-            column = self.get_column(j)
-            restrictions = self.get_zone_restrictions(column)
-
-            found = self.reduce_col(j, restrictions)
-            if found:
-                found_restrictions = True
-
         return found_restrictions
 
     def reduce_options_in_square(self):
         found_restrictions = False
-        print(f"\n{self.count}-", inspect.currentframe().f_code.co_name.title(), ":")
         square_size = 3
         for x in range(square_size):
             for y in range(square_size):
                 square = self.get_square(square_size*x, square_size*y, square_size)
-                restrictions = self.get_zone_restrictions(square)
+                restrictions = self.get_restrictions(square)
 
                 found = self.reduce_square(x, y, square_size, restrictions)
                 if found:
@@ -127,7 +114,7 @@ class Solver:
 
         return row
 
-    def get_column(self, j):
+    def get_col(self, j):
         column = []
         for i in range(self.size):
             c = self.all_options[(i,j)]
@@ -144,10 +131,10 @@ class Solver:
 
         return square
 
-    def get_zone_restrictions(self, zone):
+    def get_restrictions(self, zone):
         return [cell.value for cell in zone if cell.value]
 
-    def get_zone_options(self, zone):
+    def get_options(self, zone):
         return [cell.options for cell in zone if not cell.value]
 
     # ------------------- REDUCERS ------------------
@@ -195,7 +182,7 @@ class Solver:
         for i in range(self.size):
             row = self.get_row(i)
             # print("row", row)
-            options = self.get_zone_options(row)
+            options = self.get_options(row)
             print("options", options)
 
 
