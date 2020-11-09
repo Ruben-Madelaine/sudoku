@@ -36,7 +36,9 @@ class Solver:
         return "The great Solver !" + txt
 
     def cell_to_text(self, i, j):
-        val = ','.join([str(v) for v in self.all_options[(i,j)].options])
+        cell = self.all_options[(i,j)]
+        elems = [cell.value] if cell.value else cell.options
+        val = ','.join([str(v) for v in elems])
         c = f" {val:^7.7} "
         return c
 

@@ -14,7 +14,7 @@ def board_to_text(object, grid, cell_to_text):
         line = ""
         sub_sep = ""
         for j in range(object.size):
-            c = object.cell_to_text(i, j)
+            c = object.cell_to_text(i, j).replace("0", " ")
 
             # Vertical separators
             use_main_sep_v = j > 0 and (j + 1) % main_sep == 0
