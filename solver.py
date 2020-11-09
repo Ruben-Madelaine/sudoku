@@ -29,26 +29,29 @@ class Cell:
 class Solver:
     all_options = {}
     count = 0
+    found = 0
 
-    def __str__(self):
-        txt = display.board_to_text(self, self.all_options, self.cell_to_text)
-        return "The great Solver !" + txt
-
-    def cell_to_text(self, i, j):
-        cell = self.all_options[(i,j)]
-        elems = [cell.value] if cell.value else cell.options
-        val = ','.join([str(v) for v in elems])
-        c = f" {val:^7.7} "
-        return c
-
-    def solve(self, puzzle):
+    def __init__(self, puzzle):
         self.puzzle = puzzle
         self.size = puzzle.size
 
         self.retreive_all_possibilities()
         self.reduce_cells_options()
-        self.apply_single_choice_rule()
-        # self.use_zone_restrictions()  
+
+    def __str__(self):
+        txt = display.board_to_text(self, self.all_options, self.cell_to_text)
+        return f"The great Solver ! found {self.found} values in {self.count} iterations" + txt
+
+    def cell_to_text(self, i, j):
+        cell = self.all_options[(i,j)]
+        show_max_options = 3
+        elems = [cell.value] if cell.value else cell.options if len(cell.options) <= show_max_options else [f"({len(cell.options)})"]
+        val = ','.join([str(v) for v in elems])
+        c = f" {val:^7.7} "
+        return c
+
+    def solve(self):
+        return self.apply_single_choice_rule()
 
     def retreive_all_possibilities(self):
         for i in range(self.puzzle.size):
@@ -61,47 +64,35 @@ class Solver:
                 self.all_options[(i,j)] = c
 
     def reduce_cells_options(self):
+        found_at_least_one_value = False
         while "solving puzzle":
             self.count += 1
             print(self.count)
-            found_h = self.reduce_options(self.get_row, self.reduce_row)
-            found_v = self.reduce_options(self.get_col, self.reduce_col)
-            found_s = self.reduce_options_in_square()
+            found_h = self.reduce_options(self.get_row)
+            found_v = self.reduce_options(self.get_col)
+            found_s = self.reduce_options(self.get_sqr)
+
+            if not found_at_least_one_value and (found_h or found_s or found_v):
+                found_at_least_one_value = True
+
             if not (found_h or found_v or found_s):
                 break
+        return found_at_least_one_value
 
     def apply_single_choice_rule(self):
-        # look for single possible choice for each zone
-        self.single_choice_horizontally()
-        self.single_choice_vertically()
-        self.single_choice_in_square()
-
+        found_h = self.single_choices(self.get_row)
+        found_v = self.single_choices(self.get_col)
+        found_s = self.choices_in_square()
+        return found_h or found_v or found_s
 
     # ------------------- GLOBAL REDUCERS ------------------
 
-    def reduce_options(self, get_zone, reduce_zone):
+    def reduce_options(self, get_zone):
         found_restrictions = False
-        for i in range(self.size):
-            zone = get_zone(i)
-            restrictions = self.get_restrictions(zone)
-
-            found = reduce_zone(i, restrictions)
-            if found:
+        for z in range(self.size):
+            zone = get_zone(z)
+            if self.reduce_zone(zone):
                 found_restrictions = True
-        return found_restrictions
-
-    def reduce_options_in_square(self):
-        found_restrictions = False
-        square_size = 3
-        for x in range(square_size):
-            for y in range(square_size):
-                square = self.get_square(square_size*x, square_size*y, square_size)
-                restrictions = self.get_restrictions(square)
-
-                found = self.reduce_square(x, y, square_size, restrictions)
-                if found:
-                    found_restrictions = True
-
         return found_restrictions
 
     # ------------------- GETTER ------------------
@@ -109,88 +100,164 @@ class Solver:
     def get_row(self, i):
         row = []
         for j in range(self.size):
-            c = self.all_options[(i,j)]
-            row += [c]
-
+            row += [self.all_options[(i,j)]]
         return row
 
     def get_col(self, j):
         column = []
         for i in range(self.size):
-            c = self.all_options[(i,j)]
-            column += [c]
-
+            column += [self.all_options[(i,j)]]
         return column
 
-    def get_square(self, square_x, square_y, square_size):
+    def get_sqr(self, s):
         square = []
-        for i in range(square_size):
-            for j in range(square_size):
-                c = self.all_options[(square_x+i,square_y+j)]
-                square += [c]
+        sqr_size = int(self.size**(1/2))
 
+        x, y = (s//sqr_size)*sqr_size, (s%sqr_size)*sqr_size
+        for k in range(self.size):
+            i, j = x + k//sqr_size, y + k%sqr_size
+
+            square += [self.all_options[(i,j)]]
         return square
 
     def get_restrictions(self, zone):
         return [cell.value for cell in zone if cell.value]
 
     def get_options(self, zone):
-        return [cell.options for cell in zone if not cell.value]
+        list_of_options = [cell.options for cell in zone if not cell.value]
+        # flatten the list of sublists
+        return [opt for options in list_of_options for opt in options]
+
+    def retrieve_pos(self, zone, choice):
+        for i, c in enumerate(zone):
+            if choice in c.options:
+                return c.pos
 
     # ------------------- REDUCERS ------------------
 
-    def reduce_row(self, i, restrictions):
-        found = False
-        for j in range(self.size):
-            c = self.all_options[(i,j)]
-            found = self.remove_options(c, restrictions, i, j)
+    def reduce_zone(self, zone):
+        found_new = False
+        restrictions = self.get_restrictions(zone)
+        for c in zone:
+            found = self.remove_options(c, restrictions)
             
-        return found
+            if not found_new and found:
+                found_new = True
+        return found_new
 
-    def reduce_col(self, j, restrictions):
-        found = False
-        for i in range(self.size):
-            c = self.all_options[(i,j)]
-            found = self.remove_options(c, restrictions, i, j)
-            
-        return found
-
-    def reduce_square(self, x, y, size, restrictions):
-        found = False
-        for k in range(self.size):
-            i, j = size*x + k//size, size*y + k%size
-            c = self.all_options[(i,j)]
-            found = self.remove_options(c, restrictions, i, j)
-        return found
-
-    def remove_options(self, cell, restrictions, i, j):
+    def remove_options(self, cell, restrictions):
         intersection = set(cell.options) & set(restrictions)
 
         if cell.is_empty() and len(intersection):
-            [cell.remove(v) for v in intersection]
+            for v in intersection: 
+                cell.remove(v)
+
             if cell.one_option_left():
-                cell.set_value(cell.options[0])
-                self.puzzle.play(cell.value, *cell.pos)
-                print(f"Found a value at {cell} !")
+                self.set_value(cell, cell.options[0])
                 
             return True
 
+    # ------------------- SETTER ------------------
+
+    def set_value(self, cell, value):
+        self.found += 1
+        cell.set_value(value)
+        cell.options = []
+
+        self.puzzle.play(cell.value, *cell.pos)
+        print(f"Found a value at {cell} !")
 
     # ------------------- SINGLE CHOICE REDUCER ------------------
 
-    def single_choice_horizontally(self):
+    def single_choices(self, get_zone):
+        found_new_value = False
         for i in range(self.size):
-            row = self.get_row(i)
-            # print("row", row)
-            options = self.get_options(row)
-            print("options", options)
+            zone = get_zone(i)
 
+            count_options = self.count_options(zone)
+            found_new_value = self.single_choice(zone, count_options)
+        return found_new_value
 
-    def single_choice_vertically(self):
-        pass
+    def choices_in_square(self):
+        found_new_value = False
+        for s in range(self.size):
+            square = self.get_sqr(s)
 
-    def single_choice_in_square(self):
-        pass
+            count_options = self.count_options(square)
+            found_s = self.single_choice(square, count_options)
+            found_d = self.double_choice_in_square(square, count_options)
+            
+            if not found_new_value and (found_s or found_d):
+                found_new_value = True
+
+        return found_new_value
+
+    def count_options(self, zone):
+        options = self.get_options(zone)
+        # count duplicate options per zone
+        return {opt: options.count(opt) for opt in set(options)}
+
+    def single_choice(self, zone, count_options):
+        found_new_value = False
+        # get only single choices
+        single_choices = [k for k,v in count_options.items() if v == 1]
+
+        if single_choices:
+            found_new_value = True
+
+            cells_and_choices = self.retrieve_cells_and_choice(zone, single_choices)
+            for cell, choice in cells_and_choices:
+                self.set_value(cell, choice)
+                self.reduce_cells_options()
+
+        return found_new_value
+
+    def retrieve_cells_and_choice(self, zone, choices):
+        cells = []
+        for choice in choices:
+            pos = self.retrieve_pos(zone, choice)
+            cells += [[self.all_options[pos], choice]]
+        return cells
+        
+    def double_choice_in_square(self, square, count_options):
+        found_new_value = False
+        # Foud val possible for only 2 cells in square
+        double_choices = [k for k,v in count_options.items() if v == 2]
+        if double_choices:
+            cells_and_choices = self.retrieve_cells_and_choice(square, double_choices)
+            cells = [cell for cell, _ in cells_and_choices]
+            options = [cell for cell, _ in cells_and_choices]
+            alignment = self.aligned(cells)
+            if alignment:
+                a = "horizontal" if alignment == 1 else "vertical"
+
+                # get the zone to update
+                zone_id = cells[0].pos[a == "vertical"]
+                get_zone = [self.get_row, self.get_col][a == "vertical"]
+                zone = get_zone(zone_id)
+
+                # get the cells in zone to ignore 
+                ignoring_cells = [c.pos for c in cells]
+
+                for c in zone:
+                    if c not in cells:
+                        pass
+
+                # if those 2 cells are aligned H or V
+                # remove options in the cells 
+
+            print(f"found double choices {double_choices} in Square !!!")
+        return found_new_value
+
+    def aligned(self, cells):
+        vert = [c.pos[0] for c in cells]
+        horz = [c.pos[1] for c in cells]
+        if len(set(vert)) == 1:
+            return -1
+        elif len(set(horz)) == 1:
+            return 1
+        else:
+            return 0
 
 
 def main():
@@ -206,43 +273,44 @@ def main():
         400109500
     """
 
-    raw_sudoku = """
-        100004080
-        040000010
-        806200000
-        000520700
-        007040200
-        001093000
-        000002503
-        080000060
-        090300004
-    """
-
-    raw_sudoku = """
-        100004080
-        040000010
-        806200000
-        000520700
-        007040200
-        061093000
-        610002503
-        080000060
-        090300004
-    """
+    # raw_sudoku = """
+    #     100004080
+    #     040000010
+    #     806200000
+    #     000520700
+    #     007040200
+    #     001093000
+    #     000002503
+    #     080000060
+    #     090300004
+    # """
 
     from sudoku import Sudoku
     sudoku = Sudoku()
 
     sudoku.set_grid(raw_sudoku)
-    sudoku.hilight(1)
-    sudoku.hilight(2)
-    sudoku.hilight(3)
-    print(sudoku)
+    sudoku.hilight(4)
 
-    solver = Solver()
-    solver.solve(sudoku)
-    print(solver)
-    print(sudoku)
+    test_time(sudoku)
+
+def simple_test(sudoku):
+    solver = Solver(sudoku)
+    found_at_least_one = True
+    while found_at_least_one:
+        found_at_least_one = solver.solve()
+        print(solver)
+        print(sudoku)
+
+def test_time(sudoku):
+    import time
+    import datetime
+
+    t0 = time.time()
+    simple_test(sudoku)
+    t1 = time.time()
+
+    total = t1-t0
+    print("Total time:", str(datetime.timedelta(seconds=total)))
 
 
 if __name__ == "__main__":
