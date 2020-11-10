@@ -7,6 +7,9 @@ class Sudoku:
     size = 0
     hilighted_values = []
 
+    def __init__(self, grid):
+        self.set_grid(grid)
+
     def __str__(self):
         txt = display.board_to_text(self, self.grid, self.cell_to_text)
         return "The great Sudoku !" + txt
@@ -48,8 +51,7 @@ def main():
         090300004
     """
 
-    sudoku = Sudoku()
-    sudoku.set_grid(raw_sudoku)
+    sudoku = Sudoku(raw_sudoku)
     sudoku.hilight(3)
     print(sudoku)
 
