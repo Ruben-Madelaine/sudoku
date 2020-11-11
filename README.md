@@ -39,8 +39,11 @@ First expected release the friday **9th november 2020**
 
 ## :clipboard: Tasks
 
-- [ ] Print a sudoku board
-- [ ] Solve the sudoku automatically
+- [x] Print a sudoku board
+- [x] Solve the sudoku automatically
 - [ ] Allow a user to play
 - [ ] Solve any Sudoku's variants 
 - [ ] Try to create an hexagonal sudoku
+
+- [ ] Display solver related stats (curves)
+- [ ] Compete between solvers
