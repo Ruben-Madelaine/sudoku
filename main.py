@@ -1,34 +1,32 @@
-
 from generator import generate
-from cleaner import clean
+from cleaner2 import clean
 from sudoku import Sudoku
 from solver import Solver
 from validator import validate
 
-def test():
-    sub_size = 3
-    grid = generate(sub_size)
-    clean(grid, 50)
 
-    # store it in Sudoku
+def test(sub_size, difficulty_lvl):
+    grid = generate(sub_size)
+    clean(grid, difficulty_lvl)
     sudoku = Sudoku(grid)
-    # print(sudoku)
 
     solver = Solver(sudoku)
     solver.solve()
-    # print(sudoku)
 
     return solver.is_completed(), validate(sudoku.grid), solver.count, solver.found
 
 
 def main():
-    results = []
-    sample_size = 200
-    for i in range(sample_size):
-        results += [test()]
+    sub_size = 3
+    difficulty_lvl = 40
 
-    # print(*results, sep="\n")
-    solving_ratio = (len([b for b, _, _, _ in results if b])/sample_size) *100
+    sample_size = 200
+    results = []
+
+    for i in range(sub_size, sample_size):
+        results += [test(sub_size, difficulty_lvl)]
+
+    solving_ratio = (len([b for b, _, _, _ in results if b]) / sample_size) * 100
     print(f"Solving ratio {solving_ratio}%")
 
 

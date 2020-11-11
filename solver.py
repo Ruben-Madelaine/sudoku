@@ -243,7 +243,7 @@ def logger(txt):
 def logger(txt):
     if __name__ == "__main__":
         print(txt)
-        
+
 
 def main():
     raw_sudoku = """
@@ -265,12 +265,14 @@ def main():
 
     test_time(sudoku)
 
+
 def simple_test(sudoku):
     solver = Solver(sudoku)
     solver.solve()
     print(solver)
     print(sudoku)
     print(solver.is_completed())
+
 
 def test_time(sudoku):
     import time

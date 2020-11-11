@@ -1,4 +1,3 @@
-
 import display
 
 
@@ -54,6 +53,7 @@ def main():
     sudoku = Sudoku(raw_sudoku)
     sudoku.hilight(3)
     print(sudoku)
+
 
 if __name__ == "__main__":
     main()

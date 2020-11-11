@@ -1,5 +1,3 @@
-
-
 def validate(board):
     return (
         check_lines_and_zeros(board)
@@ -7,6 +5,7 @@ def validate(board):
         == check_squares(board)
         == True
     )
+
 
 def check_lines_and_zeros(board):
     errors = 0
