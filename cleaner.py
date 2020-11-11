@@ -3,20 +3,20 @@ import numpy as np
 import generator as gen
 
 
-def clean(level, board):
-    sqrt = int(len(board)**(1/2))
+def clean(board, level=3):
+    sqrt = int(len(board) ** (1 / 2))
     for i in range(len(board)):
         for j in range(len(board)):
-            limit = len(board)+1-random_value(level)
-            board = gen.randomize(board, sqrt)            
-            if count(board,board[i][j]) > limit:
+            limit = len(board) + 1 - random_value(level)
+            board = gen.randomize(board, sqrt)
+            if count(board, board[i][j]) > limit:
                 board[i][j] = 0
     return board
 
 
 def dificulty(level):
-    min_elem = [4, 6, 6, 9]
-    max_elem = [6, 8, 9, 10]
+    min_elem = [0, 2, 4, 6, 8]
+    max_elem = [m + 2 for m in min_elem]
     selection = [min_elem[level], max_elem[level]]
     return selection
 
@@ -27,7 +27,7 @@ def random_value(level):
     return level
 
 
-def count(board,num):
+def count(board, num):
     count = 0
     for row in board:
         for elem in row:
@@ -38,6 +38,7 @@ def count(board,num):
 
 def show(board):
     from sudoku import Sudoku
+
     sudoku = Sudoku(board)
     print(sudoku)
 
@@ -45,8 +46,11 @@ def show(board):
 def main():
     level = 3
     board = gen.generate(level)
-    board = clean(level, gen.randomize(board, int(len(board)**(1/2))))
+    board = clean(
+        gen.randomize(board, int(len(board) ** (1 / 2))),
+    )
     show(board)
 
 
-main()
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,3 @@
-
-
 def board_to_text(object, grid, cell_to_text):
     txt = ""
     main_sep = 3
@@ -53,14 +51,11 @@ def main():
             c = f" {val} "
             return c
 
-    grid = [
-        [1,0,0],
-        [1,0,0],
-        [1,0,2]
-    ]
+    grid = [[1, 0, 0], [1, 0, 0], [1, 0, 2]]
     test = Test(grid)
 
     print(test)
+
 
 if __name__ == "__main__":
     main()
