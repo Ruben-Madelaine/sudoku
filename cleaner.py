@@ -37,9 +37,8 @@ def count(board,num):
 
 
 def show(board):
-    from main import Sudoku
-    sudoku = Sudoku()
-    sudoku.set_grid(board)
+    from sudoku import Sudoku
+    sudoku = Sudoku(board)
     print(sudoku)
 
 
