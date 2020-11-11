@@ -261,7 +261,6 @@ def main():
     from sudoku import Sudoku
 
     sudoku = Sudoku(raw_sudoku)
-    sudoku.hilight(4)
 
     test_time(sudoku)
 
