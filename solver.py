@@ -239,12 +239,7 @@ def logger(txt):
     if __name__ == "__main__":
         print(txt)
 
-
-def logger(txt):
-    if __name__ == "__main__":
-        print(txt)
-
-
+        
 def main():
     raw_sudoku = """
         004903008
